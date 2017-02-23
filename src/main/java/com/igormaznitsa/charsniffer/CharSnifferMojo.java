@@ -95,25 +95,25 @@ public class CharSnifferMojo extends AbstractMojo {
    */
   @Parameter(property = "eol", required = false, defaultValue = "UNDEFINED")
   private EndOfLine eol;
-
+  
   @Parameter(property = "missingFilesAllowed", defaultValue = "false")
   private boolean missingFilesAllowed;
-
+  
   private enum FileStatus {
     OK, BAD, MISSED
   }
-
+  
   private void printStatus(@Nonnull final File file, @Nonnull final FileStatus status) {
     final String fileName = file.getName();
     final int len = 64 - fileName.length();
-
+    
     final StringBuilder buffer = new StringBuilder(128);
     buffer.append(fileName);
     for (int i = 0; i < len; i++) {
       buffer.append('.');
     }
     buffer.append(status.name());
-
+    
     switch (status) {
       case BAD:
         getLog().error(buffer.toString());
@@ -126,10 +126,10 @@ public class CharSnifferMojo extends AbstractMojo {
         break;
     }
   }
-
+  
   static boolean checkForCodes(@Nonnull final String text, @Nonnull final CheckConfig config, @Nonnull final StringBuilder errorBuffer) {
     final Set<Character> errorChars = new HashSet<Character>();
-
+    
     if (config.minCode >= 0 || config.maxCode >= 0) {
       for (int i = 0; i < text.length(); i++) {
         final char c = text.charAt(i);
@@ -144,7 +144,7 @@ public class CharSnifferMojo extends AbstractMojo {
             }
           }
         }
-
+        
         if (config.maxCode >= 0) {
           if (c > config.maxCode) {
             if (!errorChars.contains(c)) {
@@ -160,40 +160,50 @@ public class CharSnifferMojo extends AbstractMojo {
     }
     return errorChars.isEmpty();
   }
-
-  static boolean checkForAbc(@Nonnull final String text, @Nonnull final CheckConfig config) {
+  
+  static boolean checkForAbc(@Nonnull final String text, @Nonnull final CheckConfig config, @Nonnull final StringBuilder errorBuffer) {
     final String allowed = config.abc;
     final String disallowed = config.noAbc;
-
-    boolean result = true;
-
+    
+    final Set<Character> errorChars = new HashSet<Character>();
+    
     if (allowed != null || disallowed != null) {
       for (int i = 0; i < text.length(); i++) {
         final char c = text.charAt(i);
-
+        
         if (config.ignoreAbcForISOControl && Character.isISOControl(c)) {
           continue;
         }
-
+        
         if (allowed != null) {
-          result &= allowed.indexOf(c) >= 0;
+          if (allowed.indexOf(c) < 0) {
+            if (!errorChars.contains(c)) {
+              errorChars.add(c);
+              if (errorBuffer.length() > 0) {
+                errorBuffer.append(',');
+              }
+              errorBuffer.append('\'').append(c).append('\'');
+            }
+          }
         }
-
+        
         if (disallowed != null) {
-          result &= !(disallowed.indexOf(c) >= 0);
-        }
-
-        if (!result) {
-          break;
+          if (disallowed.indexOf(c) >= 0) {
+            if (!errorChars.contains(c)) {
+              errorChars.add(c);
+              if (errorBuffer.length() > 0) {
+                errorBuffer.append(',');
+              }
+              errorBuffer.append('\'').append(c).append('\'');
+            }
+          }
         }
       }
-      return result;
-
     }
-
-    return result;
+    
+    return errorChars.isEmpty();
   }
-
+  
   static boolean isValidUTF8(@Nonnull final byte[] input) {
     final CharsetDecoder cs = Charset.forName("UTF-8").newDecoder();
     try {
@@ -204,24 +214,24 @@ public class CharSnifferMojo extends AbstractMojo {
       return false;
     }
   }
-
+  
   static boolean checkForEOL(@Nonnull final String text, @Nonnull final CheckConfig config) {
     boolean result = true;
-
+    
     if (config.eol != EndOfLine.UNDEFINED) {
       final EndOfLine detected = findFirstEOL(text);
       result = (detected == EndOfLine.UNDEFINED) || (detected == config.eol);
     }
-
+    
     return result;
   }
-
+  
   @Nonnull
   static EndOfLine findFirstEOL(@Nonnull final String text) {
     char prev = ' ';
-
+    
     EndOfLine result = EndOfLine.UNDEFINED;
-
+    
     for (int i = 0; i < text.length(); i++) {
       final char curChar = text.charAt(i);
       if (curChar == '\n') {
@@ -237,7 +247,7 @@ public class CharSnifferMojo extends AbstractMojo {
       }
       prev = curChar;
     }
-
+    
     if (result == EndOfLine.UNDEFINED) {
       switch (prev) {
         case '\n':
@@ -248,39 +258,51 @@ public class CharSnifferMojo extends AbstractMojo {
           break;
       }
     }
-
+    
     return result;
   }
-
+  
   private boolean checkFile(@Nonnull final File file, @Nonnull final CheckConfig config) {
     try {
+      if (getLog().isDebugEnabled()){
+        getLog().debug("Sniffing file : "+file);
+      }
+      
       final String textBody = FileUtils.readFileToString(file, config.charSet);
-
+      
       final StringBuilder errorMessageBuffer = new StringBuilder();
-
+      
       boolean result = checkForCodes(textBody, config, errorMessageBuffer);
-
+      
       if (!result && getLog().isDebugEnabled()) {
         getLog().debug("Detected wrong chars : " + errorMessageBuffer.toString());
       }
-
+      
       errorMessageBuffer.setLength(0);
-
+      
       if (result) {
-        result &= checkForAbc(textBody, config);
+        result &= checkForAbc(textBody, config, errorMessageBuffer);
       }
-
+      
+      if (!result && getLog().isDebugEnabled()) {
+        getLog().debug("Detected wrong ABC chars : " + errorMessageBuffer.toString());
+      }
+      errorMessageBuffer.setLength(0);
+      
       if (result) {
         result &= checkForEOL(textBody, config);
+        if (!result && getLog().isDebugEnabled()) {
+          getLog().debug("Detected wrong EOL");
+        }
       }
-
+      
       if (result && config.validateUtf8) {
         result &= isValidUTF8(FileUtils.readFileToByteArray(file));
         if (!result && getLog().isDebugEnabled()) {
-          getLog().debug("File '" + file + "' contains wrong UTF8 byte sequence");
+          getLog().debug("File '" + file + "' contains wrong UTF-8 byte sequence");
         }
       }
-
+      
       return result;
     }
     catch (IOException ex) {
@@ -288,7 +310,7 @@ public class CharSnifferMojo extends AbstractMojo {
       return false;
     }
   }
-
+  
   @Override
   public void execute() throws MojoExecutionException {
     final CheckConfig config = CheckConfig.build().
@@ -301,9 +323,9 @@ public class CharSnifferMojo extends AbstractMojo {
         setValidateUtf8(this.validateUtf8).
         setIgnoreAbcForISOControl(this.ignoreAbcForISOControl).
         build();
-
+    
     int errors = 0;
-
+    
     for (final File file : this.files) {
       if (file.isFile()) {
         if (file.length() == 0L && this.failForEmptyFile) {
@@ -323,13 +345,13 @@ public class CharSnifferMojo extends AbstractMojo {
         if (getLog().isDebugEnabled()) {
           getLog().debug("File '" + file + "' not found");
         }
-
+        
         if (!this.missingFilesAllowed) {
           throw new MojoExecutionException("Can't find file : " + file);
         }
       }
     }
-
+    
     if (errors > 0) {
       throw new MojoExecutionException("Detected bad files, check log");
     }
