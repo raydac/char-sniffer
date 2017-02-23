@@ -7,3 +7,28 @@
 
 # Char Sniffer
 A Small easy Maven plugin to check char codes in text files.
+
+# How to use?
+For instance to restrict char codes (0-255) in text file License.txt situated in the root project folder, you can use such configuration
+```xml
+<plugin>
+  <groupId>com.igormaznitsa</groupId>
+  <artifactId>char-sniffer</artifactId>
+  <version>1.0.0</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>sniff</goal>
+      </goals>
+      <configuration>
+        <files>
+          <file>${basedir}/License.txt</file>
+        </files>
+        <failForEmptyFile>true</failForEmptyFile>
+        <minCharCode>0</minCharCode>
+        <maxCharCode>255</maxCharCode>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
