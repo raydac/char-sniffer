@@ -37,7 +37,7 @@ import org.apache.commons.io.FileUtils;
 public class CharSnifferMojo extends AbstractMojo {
 
   /**
-   * Text files to be processed.
+   * Text files which chars will be sniffed.
    */
   @Parameter(property = "files", required = true)
   private File[] files;
@@ -49,53 +49,56 @@ public class CharSnifferMojo extends AbstractMojo {
   private int minCharCode;
 
   /**
-   * Maximum char code allowed.
+   * Maximal char code allowed.
    */
   @Parameter(property = "maxCharCode", required = false, defaultValue = "-1")
   private int maxCharCode;
 
   /**
-   * Char set for files.
+   * Char set to decode file chars.
    */
   @Parameter(property = "charSet", required = false, defaultValue = "UTF-8")
   private String charSet;
 
   /**
-   * String of chars which only allowed to be presented in text files.
+   * String of chars which only allowed to be presented in file.
    */
   @Parameter(property = "abc", required = false)
   private String abc;
 
   /**
-   * String of prohibited chars.
+   * String of prohibited chars to be presented in text.
    */
   @Parameter(property = "noAbc", required = false)
   private String noAbc;
 
   /**
-   * Fail if a file has zero length.
+   * Fail if a sniffed file has zero length.
    */
   @Parameter(property = "failForEmptyFile", defaultValue = "false")
   private boolean failForEmptyFile;
 
   /**
-   * Validate UTF8 chars.
+   * Validate UTF-8 char bytes. Allows to detect wrong UTF-8 chains.
    */
   @Parameter(property = "validateUtf8", defaultValue = "false")
   private boolean validateUtf8;
 
   /**
-   * Ignore checking ISO special chars for ABC checking.
+   * Ignore ISO special chars in ABC checking.
    */
   @Parameter(property = "ignoreAbcForISOControl", defaultValue = "true")
   private boolean ignoreAbcForISOControl;
 
   /**
-   * Required End-Of-Line codes.
+   * Required End-Of-Line codes (CR,LF,CRLF).
    */
   @Parameter(property = "eol", required = false, defaultValue = "UNDEFINED")
   private EndOfLine eol;
   
+  /**
+   * Allow missing files.
+   */
   @Parameter(property = "missingFilesAllowed", defaultValue = "false")
   private boolean missingFilesAllowed;
   
