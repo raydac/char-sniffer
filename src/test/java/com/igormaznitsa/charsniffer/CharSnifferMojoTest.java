@@ -3,7 +3,7 @@ package com.igormaznitsa.charsniffer;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class CheckTextMojoTest {
+public class CharSnifferMojoTest {
   
   @Test
   public void testEolLF() {
@@ -68,17 +68,23 @@ public class CheckTextMojoTest {
   @Test
   public void testCheckForCodes_Numbers() {
     final CheckConfig config = CheckConfig.build().setMinCode('0').setMaxCode('9').build();
-    assertFalse(CharSnifferMojo.checkForCodes("1236217642121a23213", config));
-    assertTrue(CharSnifferMojo.checkForCodes("1123001323319931", config));
-    assertTrue(CharSnifferMojo.checkForCodes("", config));
+    
+    final StringBuilder errorChars = new StringBuilder();
+    
+    assertFalse(CharSnifferMojo.checkForCodes("1236217642121a23213", config, errorChars));
+    assertTrue(CharSnifferMojo.checkForCodes("1123001323319931", config, errorChars));
+    assertTrue(CharSnifferMojo.checkForCodes("", config, errorChars));
   }
   
   @Test
   public void testCheckForCodes_ASCII() {
     final CheckConfig config = CheckConfig.build().setMinCode(0).setMaxCode(0xFF).build();
-    assertTrue(CharSnifferMojo.checkForCodes("askjhsadkjhsadoiqwueoiiUOIUOIkjH~OIUWQYEIQUWDKHSAKDHAK", config));
-    assertFalse(CharSnifferMojo.checkForCodes("askjhsadkjhsadoiqwueoiiUOIUOIkjH~OIUWQYEIQUWDKHSAKDHAKП", config));
-    assertTrue(CharSnifferMojo.checkForCodes("", config));
+
+    final StringBuilder errorChars = new StringBuilder();
+    
+    assertTrue(CharSnifferMojo.checkForCodes("askjhsadkjhsadoiqwueoiiUOIUOIkjH~OIUWQYEIQUWDKHSAKDHAK", config, errorChars));
+    assertFalse(CharSnifferMojo.checkForCodes("askjhsadkjhsadoiqwueoiiUOIUOIkjH~OIUWQYEIQUWDKHSAKDHAKП", config, errorChars));
+    assertTrue(CharSnifferMojo.checkForCodes("", config, errorChars));
   }
   
   

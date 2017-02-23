@@ -28,6 +28,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import org.apache.commons.io.FileUtils;
 
@@ -105,7 +107,8 @@ public class CharSnifferMojo extends AbstractMojo {
     final String fileName = file.getName();
     final int len = 64 - fileName.length();
 
-    final StringBuilder buffer = new StringBuilder();
+    final StringBuilder buffer = new StringBuilder(128);
+    buffer.append(fileName);
     for (int i = 0; i < len; i++) {
       buffer.append('.');
     }
@@ -124,23 +127,38 @@ public class CharSnifferMojo extends AbstractMojo {
     }
   }
 
-  static boolean checkForCodes(@Nonnull final String text, @Nonnull final CheckConfig config) {
-    boolean result = true;
-    for (int i = 0; i < text.length(); i++) {
-      final char c = text.charAt(i);
-      if (result && config.minCode >= 0) {
-        result &= c >= config.minCode;
-      }
+  static boolean checkForCodes(@Nonnull final String text, @Nonnull final CheckConfig config, @Nonnull final StringBuilder errorBuffer) {
+    final Set<Character> errorChars = new HashSet<Character>();
 
-      if (result && config.maxCode >= 0) {
-        result &= c <= config.maxCode;
-      }
+    if (config.minCode >= 0 || config.maxCode >= 0) {
+      for (int i = 0; i < text.length(); i++) {
+        final char c = text.charAt(i);
+        if (config.minCode >= 0) {
+          if (c < config.minCode) {
+            if (!errorChars.contains(c)) {
+              errorChars.add(c);
+              if (errorBuffer.length() > 0) {
+                errorBuffer.append(',');
+              }
+              errorBuffer.append('\'').append(c).append('\'');
+            }
+          }
+        }
 
-      if (!result) {
-        break;
+        if (config.maxCode >= 0) {
+          if (c > config.maxCode) {
+            if (!errorChars.contains(c)) {
+              errorChars.add(c);
+              if (errorBuffer.length() > 0) {
+                errorBuffer.append(',');
+              }
+              errorBuffer.append('\'').append(c).append('\'');
+            }
+          }
+        }
       }
     }
-    return result;
+    return errorChars.isEmpty();
   }
 
   static boolean checkForAbc(@Nonnull final String text, @Nonnull final CheckConfig config) {
@@ -238,11 +256,20 @@ public class CharSnifferMojo extends AbstractMojo {
     try {
       final String textBody = FileUtils.readFileToString(file, config.charSet);
 
-      boolean result = checkForCodes(textBody, config);
+      final StringBuilder errorMessageBuffer = new StringBuilder();
+
+      boolean result = checkForCodes(textBody, config, errorMessageBuffer);
+
+      if (!result && getLog().isDebugEnabled()) {
+        getLog().debug("Detected wrong chars : " + errorMessageBuffer.toString());
+      }
+
+      errorMessageBuffer.setLength(0);
 
       if (result) {
         result &= checkForAbc(textBody, config);
       }
+
       if (result) {
         result &= checkForEOL(textBody, config);
       }
