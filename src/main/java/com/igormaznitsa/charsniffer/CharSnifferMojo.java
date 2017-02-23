@@ -256,6 +256,9 @@ public class CharSnifferMojo extends AbstractMojo {
         case '\r':
           result = EndOfLine.CR;
           break;
+        default: {
+          result = EndOfLine.UNDEFINED;
+        }break;
       }
     }
     
