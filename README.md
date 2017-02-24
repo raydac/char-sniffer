@@ -32,3 +32,24 @@ For instance to restrict char codes (0-255) in text file License.txt situated in
   </executions>
 </plugin>
 ```
+Also it is possible to define chars which will be only allowed in text files
+```xml
+<plugin>
+  <groupId>com.igormaznitsa</groupId>
+  <artifactId>char-sniffer</artifactId>
+  <version>1.0.0</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>sniff</goal>
+      </goals>
+      <configuration>
+         <files>
+            <file>${basedir}/License.txt</file>
+         </files>
+         <abc>ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,.'":;/@[]()-=*%0123456789Ü</abc>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
