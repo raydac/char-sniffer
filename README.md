@@ -53,3 +53,45 @@ Also it is possible to define chars which will be only allowed in text files
   </executions>
 </plugin>
 ```
+It is possible to disable some chars in text files. For instance below described how to disable © and ™ in text files.
+```xml
+<plugin>
+  <groupId>com.igormaznitsa</groupId>
+  <artifactId>char-sniffer</artifactId>
+  <version>1.0.0</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>sniff</goal>
+      </goals>
+      <configuration>
+         <files>
+            <file>${basedir}/License.txt</file>
+         </files>
+         <noAbc>&#8482;&#9400;</noAbc>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
+To be sure that UTF-8 codes of text files are ok, it is possible to use special flag `validateUtf8`, it will check that all UTF-8 chars have normal codes and there is not any broken char.
+```xml
+<plugin>
+  <groupId>com.igormaznitsa</groupId>
+  <artifactId>char-sniffer</artifactId>
+  <version>1.0.0</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>sniff</goal>
+      </goals>
+      <configuration>
+         <files>
+            <file>${basedir}/License.txt</file>
+         </files>
+         <validateUtf8>true</validateUtf8>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
+```
